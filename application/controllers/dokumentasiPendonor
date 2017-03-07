@@ -1,0 +1,130 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class dokumentasiPendonor extends CI_Controller {
+
+	/**
+	 * Index Page for this controller.
+	 *
+	 * Maps to the following URL
+	 * 		http://example.com/index.php/welcome
+	 *	- or -  
+	 * 		http://example.com/index.php/welcome/index
+	 *	- or -
+	 * Since this controller is set as the default controller in 
+	 * config/routes.php, it's displayed at http://example.com/
+	 *
+	 * So any other public methods not prefixed with an underscore will
+	 * map to /index.php/welcome/<method_name>
+	 * @see http://codeigniter.com/user_guide/general/urls.html
+	 */
+	 
+	 private $limit = 10;
+	
+	 function __construct()
+		{
+		parent::__construct();
+		
+		$this->load->library(array('table','form_validation'));
+		$this->load->helper(array('url','form'));
+		$this->load->model('EntityUser','',TRUE);
+		//session_start();
+		}
+		function index(){
+			$data['title']="Lihat Laporan Keungan";
+			$data['profil'] = $this->EntityUser->get_profile($_SESSION['username'],$_SESSION['password'])->row();
+			$data['selectedMenu1']="class=\"active\"";
+			$data['selectedMenu2']="";
+			$data['selectedMenu3']="";
+			$data['selectedMenu4']="";
+			$data['selectedMenu5']="";
+			$data['selectedMenu6']="";
+			$data['selectedMenu7']="";
+			
+			$this->load->view('Header.php',$data);
+			$this->load->view('left-side-admin.php',$data);
+			$this->load->view('LihatDokumentasiPendonor.php',$data);
+			$this->load->view('Footer.php',$data);
+		}
+		
+		
+		public function list_member($offset = 0, $order_column = '', $order_type = 'asc'){
+			$data['profil'] = $this->EntityUser->get_profile($_SESSION['username'],$_SESSION['password'])->row();
+			$data['title']=$_SESSION['level'];
+			$data['selectedMenu1']="";
+			$data['selectedMenu2']="";
+			$data['selectedMenu3']="class=\"active\"";
+			$data['selectedMenu4']="";
+			$data['selectedMenu5']="";
+			$data['selectedMenu6']="";
+			$data['selectedMenu7']="";
+			
+			if (empty($offset)) $offset = 0;
+			if (empty($order_column)) $order_column = 'ID_member';
+			if (empty($order_type)) $order_type = 'asc';
+			//TODO: check for valid column
+	 
+			// load data
+			$member = $this->EntityUser->get_paged_list_member($this->limit, $offset, $order_column, $order_type)->result();
+			
+			
+			// generate paginationq
+			$this->load->library('pagination');
+			$config['base_url'] = site_url('User/index/');
+			$config['total_rows'] = $this->EntityUser->count_all_member();
+			$config['per_page'] = $this->limit;
+			$config['uri_segment'] = 3;
+			$this->pagination->initialize($config);
+			$data['pagination'] = $this->pagination->create_links();
+	 
+			// generate table data
+			$tmpl = array (
+                    'table_open'          => '<table border="1" cellpadding="4" cellspacing="0">',
+
+                    'heading_row_start'   => '<tr>',
+                    'heading_row_end'     => '</tr>',
+                    'heading_cell_start'  => '<th>',
+                    'heading_cell_end'    => '</th>',
+
+                    'row_start'           => '<tr>',
+                    'row_end'             => '</tr>',
+                    'cell_start'          => '<td>',
+                    'cell_end'            => '</td>',
+
+                    'row_alt_start'       => '<tr>',
+                    'row_alt_end'         => '</tr>',
+                    'cell_alt_start'      => '<td>',
+                    'cell_alt_end'        => '</td>',
+
+                    'table_close'         => '</table>'
+              );
+
+			$this->table->set_template($tmpl);
+			$this->load->library('table');
+			$this->table->set_empty("&nbsp;");
+			$new_order = ($order_type == 'asc' ? 'desc' : 'asc');
+			$this->table->set_heading(
+				'No',
+				anchor('User/list_member/'.$offset.'/nama/'.$new_order, 'Nama'),
+				anchor('User/list_member/'.$offset.'/username/'.$new_order, 'Username')
+				//'Actions'
+			);
+			$i = 0 + $offset;
+			foreach ($member as $memberdata){
+				$this->table->add_row(++$i, 
+									$memberdata->nama,
+									$memberdata->username 
+					//anchor('User/view_member/'.$memberdata->id_member,"<span class='icon-user on-left'>view</span>",array('class'=>'view')).' '.
+					//anchor('User/update_member/'.$memberdata->id_member,"<span class='icon-pencil on-left'>update</span>",array('class'=>'update')).' '.
+					//anchor('User/delete_member/'.$memberdata->id_member,"<span class='icon-cancel-2 on-left'>delete</span>",array('class'=>'delete','onclick'=>"return confirm('Apakah anda yakin ingin menghapus data member?')"))
+				);
+			}
+			$data['table'] = $this->table->generate();
+				
+				
+				$this->load->view('Header.php',$data);
+				$this->load->view('left-side-admin.php',$data);
+				$this->load->view('list_member.php',$data);
+				$this->load->view('Footer.php',$data);
+		}
+
+		?>
